@@ -16,11 +16,12 @@ public class CustomerService {
 	
 	 private  final CustomerRepository customerRepository;
 
-	  public Flux<Customer> getAllCustomer(){
-	    return customerRepository.findAll();
+	  public Flux<CustomerDto> getAllCustomer(){
+	    return customerRepository.findAll().map(CustomerUtil::entityToDto);
 	  }
-	  public Mono<Customer> getCustomerById(String id){
-	    return  customerRepository.findById(id);
+
+	  public Mono<CustomerDto> getCustomerById(String id){
+	    return  customerRepository.findById(id).map(CustomerUtil::entityToDto);
 	  }
 
 	  public Mono<CustomerDto> createCustomer(Mono<CustomerDto> entityToDto){
@@ -39,24 +40,18 @@ public class CustomerService {
 
 	  }
 
+	public Mono<CustomerDto> updateCustomer(Mono<CustomerDto> customerDtoMono,String id){
+		return customerRepository.findById(id)
+				.flatMap(p->customerDtoMono.map(CustomerUtil::dtoToEntity)
+						.doOnNext(e->e.setId(id)))
+				.flatMap(customerRepository::save)
+				.map(CustomerUtil::entityToDto);
 
+	}
 
-	  public Mono<Customer> updateCustomer(String id, Customer customer){
-	    return customerRepository.findById(id)
-	            .flatMap(bean -> {
-	              bean.setName(customer.getName());
-				  bean.setLastname(customer.getLastname());
-				  bean.setDni(customer.getDni());
-	              bean.setTypeCustomer(customer.getTypeCustomer());
-				  bean.setProfile(customer.getProfile());
-				  return customerRepository.save(bean);
-	            });
-	  }
-	  public Mono<Customer> deleteCustomer(String id){
-	    return customerRepository.findById(id)
-	            .flatMap(existsCustomerRepository -> customerRepository.delete(existsCustomerRepository)
-	                    .then(Mono.just(existsCustomerRepository)));
-	  }
+	public Mono<Void> deleteCustomer(String id){
+		return customerRepository.deleteById(id);
+	}
 
 
 }
